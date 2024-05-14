@@ -1,9 +1,14 @@
 import { Container, Typography } from '@mui/material';
-import { useEffect } from 'react';
-import { Coordinates } from './types';
+import { useEffect, useRef } from 'react';
+import { Coordinates, IncomingCoordinates } from './types';
 
 function App() {
+  const ws = useRef<WebSocket | null>(null);
+
   useEffect(() => {
+    ws.current = new WebSocket('ws://localhost:8000/paint');
+    ws.current.onclose = () => console.log('ws closed');
+
     const canvas = document.querySelector<HTMLCanvasElement>('#canvas')!;
 
     const ctx = canvas.getContext('2d')!;
@@ -14,6 +19,15 @@ function App() {
       x: 0,
       y: 0,
     };
+
+    ws.current.addEventListener('message', async (msg) => {
+      const parsedMessage = JSON.parse(msg.data) as IncomingCoordinates;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'blue';
+      ctx.lineTo(parsedMessage.payload.x, parsedMessage.payload.y);
+      ctx.stroke();
+    });
 
     const getPosition = (event: MouseEvent) => {
       coordinates.x = event.clientX - canvas.offsetLeft;
@@ -29,7 +43,7 @@ function App() {
       paint = false;
     };
 
-    const sketch = (event: MouseEvent) => {
+    const draw = (event: MouseEvent) => {
       if (!paint) return;
 
       ctx.beginPath();
@@ -44,12 +58,21 @@ function App() {
       ctx.lineTo(coordinates.x, coordinates.y);
 
       ctx.stroke();
-      console.log(coordinates);
+      if (!ws.current) return;
+      ws.current.send(
+        JSON.stringify({ type: 'SET_PIXELS', payload: coordinates })
+      );
     };
 
     canvas.addEventListener('mousedown', startPainting);
     canvas.addEventListener('mouseup', stopPainting);
-    canvas.addEventListener('mousemove', sketch);
+    canvas.addEventListener('mousemove', draw);
+
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
   }, []);
 
   return (
