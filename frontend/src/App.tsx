@@ -20,23 +20,29 @@ function App() {
       y: 0,
     };
 
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'blue';
+
     ws.current.addEventListener('message', async (msg) => {
       const parsedMessage = JSON.parse(msg.data) as IncomingCoordinates;
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = 'blue';
+      ctx.beginPath();
+      ctx.moveTo(parsedMessage.payload.x, parsedMessage.payload.y);
+      canvas.addEventListener('mousemove', (e) => {
+        setCoordinates(e);
+      })
       ctx.lineTo(parsedMessage.payload.x, parsedMessage.payload.y);
       ctx.stroke();
     });
 
-    const getPosition = (event: MouseEvent) => {
+    const setCoordinates = (event: MouseEvent) => {
       coordinates.x = event.clientX - canvas.offsetLeft;
       coordinates.y = event.clientY - canvas.offsetTop;
     };
 
     const startPainting = (event: MouseEvent) => {
       paint = true;
-      getPosition(event);
+      setCoordinates(event);
     };
 
     const stopPainting = () => {
@@ -47,17 +53,13 @@ function App() {
       if (!paint) return;
 
       ctx.beginPath();
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = 'blue';
-
       ctx.moveTo(coordinates.x, coordinates.y);
 
-      getPosition(event);
+      setCoordinates(event);
 
       ctx.lineTo(coordinates.x, coordinates.y);
-
       ctx.stroke();
+
       if (!ws.current) return;
       ws.current.send(
         JSON.stringify({ type: 'SET_PIXELS', payload: coordinates })
