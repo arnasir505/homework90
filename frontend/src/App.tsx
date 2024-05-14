@@ -1,35 +1,37 @@
 import { Container, Typography } from '@mui/material';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { Coordinates } from './types';
 
 function App() {
-  const ref = useRef(null);
-
   useEffect(() => {
     const canvas = document.querySelector<HTMLCanvasElement>('#canvas')!;
 
     const ctx = canvas.getContext('2d')!;
 
-    let coordinates = { x: 0, y: 0 };
-
     let paint = false;
+
+    let coordinates: Coordinates = {
+      x: 0,
+      y: 0,
+    };
 
     const getPosition = (event: MouseEvent) => {
       coordinates.x = event.clientX - canvas.offsetLeft;
       coordinates.y = event.clientY - canvas.offsetTop;
-    }
+    };
 
     const startPainting = (event: MouseEvent) => {
       paint = true;
       getPosition(event);
-    }
+    };
 
     const stopPainting = () => {
       paint = false;
-    }
+    };
 
     const sketch = (event: MouseEvent) => {
       if (!paint) return;
-      
+
       ctx.beginPath();
       ctx.lineWidth = 3;
       ctx.lineCap = 'round';
@@ -42,14 +44,12 @@ function App() {
       ctx.lineTo(coordinates.x, coordinates.y);
 
       ctx.stroke();
-      console.log(coordinates)
-    }
+      console.log(coordinates);
+    };
 
-    window.addEventListener('load', () => {
-      document.addEventListener('mousedown', startPainting);
-      document.addEventListener('mouseup', stopPainting);
-      document.addEventListener('mousemove', sketch);
-    });
+    canvas.addEventListener('mousedown', startPainting);
+    canvas.addEventListener('mouseup', stopPainting);
+    canvas.addEventListener('mousemove', sketch);
   }, []);
 
   return (
@@ -74,7 +74,6 @@ function App() {
         width='1200px'
         height='750px'
         style={{ border: '1px solid #000' }}
-        ref={ref}
       ></canvas>
     </Container>
   );
